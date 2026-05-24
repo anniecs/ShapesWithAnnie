@@ -4,20 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>和Annie一起變變變面積</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap');
         body {
             font-family: 'Noto Sans TC', sans-serif;
             background-color: #f2efe9; 
             color: #4a4e4d;
-            overflow: hidden; /* 徹底鎖定螢幕，不允許任何多餘滾動 */
+            overflow: hidden; /* 徹底鎖定螢幕，不允許任何滾動 */
             position: fixed;
             width: 100%;
             height: 100%;
         }
-        /* 加大操控點碰觸範圍，更適合 7 歲小朋友 */
+        /* 加大操控點碰觸範圍，更適合小朋友手指拖拉 */
         .magic-handle {
             transition: transform 0.15s ease, fill 0.15s ease;
             cursor: grab;
@@ -31,81 +33,98 @@
         }
     </style>
 </head>
-<body class="flex flex-col h-screen h-[100dvh] justify-between p-2.5 select-none">
+<body class="flex flex-col h-screen h-[100dvh] justify-between p-3 select-none">
 
+    <!-- 頂部極簡單行導覽列 -->
     <header class="w-full flex items-center justify-between bg-[#e5dfd3] bg-opacity-70 backdrop-blur-sm py-2 px-3 rounded-xl shadow-sm z-10 shrink-0">
         <h1 class="text-sm font-bold text-[#4a4e4d] tracking-wide">和Annie一起變變變面積 ✨</h1>
-        
-        <div class="bg-[#4a5356] text-white px-2.5 py-1 rounded-lg shadow-sm flex items-center space-x-1 shrink-0">
-            <span class="text-[9px] text-[#c2c9c6]">目標面積:</span>
-            <span id="label-total-area" class="text-sm font-black tracking-tight text-amber-300">24</span>
-            <span class="text-[9px] text-[#c2c9c6]">格</span>
-        </div>
+        <span class="text-[9px] bg-[#b5c2b7] text-[#4a584d] px-2.5 py-1 rounded-full font-bold shadow-sm shrink-0">
+            Annie 的幾何世界 🎨
+        </span>
     </header>
 
-    <div class="flex-grow my-1.5 relative bg-[#faf9f6] border-2 border-[#e5dfd3] rounded-xl overflow-hidden shadow-inner flex items-center justify-center min-h-0 h-0">
+    <!-- 中央核心：幾何畫布與右側控制大整合面板（自適應高度） -->
+    <div class="flex-grow my-2 relative bg-[#faf9f6] border-2 border-[#e5dfd3] rounded-2xl overflow-hidden shadow-inner flex items-center justify-center min-h-0 h-0">
         
+        <!-- SVG 格子紙畫布 (固定比例 viewbox) -->
         <svg id="geo-canvas" class="w-full h-full select-none" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" style="touch-action: none;">
+            <!-- 背景網格線與 12x8 格子紙 (將由 JS 生成) -->
             <g id="grid-lines"></g>
 
+            <!-- 下底同高三角形（呈現下三角時高亮） -->
             <polygon id="svg-lower-triangle" fill="rgba(224, 159, 141, 0.35)" stroke="#e09f8d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 5" style="display: none;"></polygon>
             
+            <!-- 主核心目標圖形 -->
             <polygon id="svg-main-shape" fill="rgba(142, 154, 175, 0.25)" stroke="#8e9aaf" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"></polygon>
             
+            <!-- 身高指示線與直角記號 -->
             <line id="svg-height-line" stroke="#87986a" stroke-width="2.5" stroke-dasharray="4 4" stroke-linecap="round"></line>
             <path id="svg-right-angle" fill="none" stroke="#87986a" stroke-width="1.5"></path>
             
-            <text id="svg-height-text" fill="#6b7a52" font-weight="700" font-size="13" text-anchor="end" alignment-baseline="middle">高度 = 4</text>
-            <text id="svg-base-text" fill="#5c677d" font-weight="700" font-size="13" text-anchor="middle">底邊 = 6</text>
+            <!-- 外側大型數字標籤 (字體變大、加粗且完全避開網格座標) -->
+            <text id="svg-height-text" fill="#6b7a52" font-weight="900" font-size="16" text-anchor="end" alignment-baseline="middle">高度 = 4</text>
+            <text id="svg-base-text" fill="#5c677d" font-weight="900" font-size="16" text-anchor="middle">底邊 = 6</text>
 
-            <circle id="handle-top-right" class="magic-handle" r="13" fill="#87986a" stroke="#ffffff" stroke-width="3" shadow-md></circle>
+            <!-- 魔法觸控操控球：右上角 (控制高、斜度) - 🟢 -->
+            <circle id="handle-top-right" class="magic-handle" r="14" fill="#87986a" stroke="#ffffff" stroke-width="3.5" shadow-md></circle>
             
-            <circle id="handle-bottom-right" class="magic-handle" r="13" fill="#6d7993" stroke="#ffffff" stroke-width="3" shadow-md></circle>
+            <!-- 魔法觸控操控球：右下角 (控制底邊長度) - 🔵 -->
+            <circle id="handle-bottom-right" class="magic-handle" r="14" fill="#6d7993" stroke="#ffffff" stroke-width="3.5" shadow-md></circle>
         </svg>
 
-        <div class="absolute bottom-2 left-2 bg-[#e5dfd3] bg-opacity-80 px-2 py-0.5 rounded-md text-[9px] font-bold text-[#5a6467] pointer-events-none">
+        <!-- 形狀名稱浮動提示 -->
+        <div class="absolute bottom-2 left-3 bg-[#e5dfd3] bg-opacity-80 px-2 py-0.5 rounded-md text-[9px] font-bold text-[#5a6467] pointer-events-none">
             目前形狀：<span id="label-shape-name">平行四邊形 ▱</span>
         </div>
-    </div>
 
-    <div class="w-full bg-white rounded-xl border border-[#d8d3c9] p-2 flex flex-col space-y-2 shrink-0">
-        
-        <div class="grid grid-cols-12 gap-2 items-center">
-            <div class="col-span-5 flex bg-[#f2efe9] p-0.5 rounded-lg border border-[#d4cbba] shrink-0">
-                <button id="btn-parallelogram" onclick="setShape('parallelogram')" class="flex-1 py-1 rounded-md text-[10px] font-bold transition-all bg-[#8e9aaf] text-white shadow-sm">
-                    ▱ 四邊形
-                </button>
-                <button id="btn-triangle" onclick="setShape('triangle')" class="flex-1 py-1 rounded-md text-[10px] font-bold transition-all text-[#7f8c8d]">
-                    🔺 三角形
-                </button>
-            </div>
+        <!-- 🌟 右側留白區域：一體化操作與面積呈現面板 (手機完美高度對應) -->
+        <div class="absolute right-[2.5%] top-[6%] bottom-[6%] w-[25.5%] flex flex-col justify-between bg-white bg-opacity-95 p-2 rounded-xl border border-[#d8d3c9] shadow-md z-20">
             
-            <div class="col-span-7 flex items-center justify-around bg-[#faf9f6] py-1 rounded-lg border border-[#e5dfd3] shrink-0">
-                <button onclick="changeColor('blue')" id="palette-blue" class="w-6 h-6 rounded-full bg-[#8e9aaf] border-2 border-white shadow-md transform scale-110 transition-transform"></button>
-                <button onclick="changeColor('green')" id="palette-green" class="w-6 h-6 rounded-full bg-[#a3b18a] border-2 border-transparent shadow-sm transition-transform"></button>
-                <button onclick="changeColor('pink')" id="palette-pink" class="w-6 h-6 rounded-full bg-[#cdb4db] border-2 border-transparent shadow-sm transition-transform"></button>
-                <button onclick="changeColor('orange')" id="palette-orange" class="w-6 h-6 rounded-full bg-[#ddb892] border-2 border-transparent shadow-sm transition-transform"></button>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-12 gap-2 items-center">
-            <div id="option-triangle-wrapper" class="col-span-7 bg-[#faf9f6] px-2 py-1 rounded-lg border border-[#e5dfd3] transition-opacity shrink-0">
-                <label class="flex items-center space-x-2 cursor-pointer select-none">
-                    <input type="checkbox" id="input-show-triangle" onchange="toggleTriangleOption()" class="w-4 h-4 rounded border-[#d8d3c9] text-[#e09f8d] focus:ring-0 bg-white">
-                    <span class="text-[10px] font-bold text-[#4a4e4d]">
-                        👀 呈現下三角
-                    </span>
-                </label>
+            <!-- 1. 形狀快速切換鈕 (超大容易點按) -->
+            <div class="flex flex-col space-y-1 shrink-0">
+                <button id="btn-parallelogram" onclick="setShape('parallelogram')" class="w-full py-2.5 rounded-lg text-[11px] font-bold transition-all bg-[#8e9aaf] text-white shadow-sm flex items-center justify-center space-x-1">
+                    <span>▱ 四邊形</span>
+                </button>
+                <button id="btn-triangle" onclick="setShape('triangle')" class="w-full py-2.5 rounded-lg text-[11px] font-bold transition-all text-[#7f8c8d] border border-[#d4cbba] bg-[#faf9f6] flex items-center justify-center space-x-1">
+                    <span>🔺 三角形</span>
+                </button>
             </div>
 
-            <div id="small-triangle-report" class="col-span-5 bg-[#e09f8d] bg-opacity-10 border border-[#e09f8d] border-opacity-30 py-1 px-1.5 rounded-lg text-center transition-all shrink-0" style="display: none;">
-                <span class="text-[10px] font-bold text-[#b86b57]">
-                    下三角: <span id="label-triangle-area" class="text-xs font-black">12</span> 格
-                </span>
+            <!-- 2. 下三角勾選處 (升級為好按的大按鈕，防止按不到 checkbox) -->
+            <button id="btn-toggle-triangle" onclick="toggleTriangleOption()" class="w-full py-2 px-1 rounded-lg border-2 border-[#e5dfd3] bg-[#faf9f6] text-[10px] font-bold text-slate-700 flex flex-col items-center justify-center space-y-1 transition-all shrink-0">
+                <i id="triangle-btn-icon" class="fa-solid fa-eye text-slate-400 text-xs"></i>
+                <span id="triangle-btn-text">呈現下三角</span>
+            </button>
+
+            <!-- 3. 大字體面積數據呈現區 (黑底金字高對比，極清晰) -->
+            <div class="space-y-1.5 shrink-0">
+                <!-- 總面積面板 -->
+                <div class="bg-[#4a5356] text-white p-2 rounded-lg text-center flex flex-col justify-center shadow-inner">
+                    <span class="text-[8px] text-[#c2c9c6] font-bold block">目標圖形面積 (<span id="label-shape-type">平行四邊形</span>)</span>
+                    <span id="metric-total-area" class="text-lg font-black text-amber-300">24 <span class="text-[9px] font-bold text-[#c2c9c6]">格</span></span>
+                </div>
+                <!-- 下三角面積面板 (勾選後即時呈現) -->
+                <div id="small-triangle-report" class="bg-[#e09f8d] bg-opacity-20 border border-[#e09f8d] border-opacity-40 p-2 rounded-lg text-center flex flex-col justify-center transition-all" style="display: none;">
+                    <span class="text-[8px] text-[#b86b57] font-bold block">下三角面積</span>
+                    <span id="metric-triangle-area" class="text-lg font-black text-[#b86b57]">12 <span class="text-[9px] font-bold text-[#b86b57]">格</span></span>
+                </div>
             </div>
+
         </div>
     </div>
 
+    <!-- 底部控制區：色彩更換畫筆 (保留在下方) -->
+    <div class="w-full bg-[#e5dfd3] bg-opacity-70 backdrop-blur-sm p-2 rounded-xl border border-[#d4cbba] flex items-center justify-between shrink-0">
+        <span class="text-[10px] font-bold text-[#7f8c8d] ml-1">🌈 幫圖形換個衣服：</span>
+        <div class="flex items-center space-x-3 pr-1">
+            <button onclick="changeColor('blue')" id="palette-blue" class="w-7 h-7 rounded-full bg-[#8e9aaf] border-2 border-white shadow-md transform scale-110 transition-transform"></button>
+            <button onclick="changeColor('green')" id="palette-green" class="w-7 h-7 rounded-full bg-[#a3b18a] border-2 border-transparent shadow-sm transition-transform"></button>
+            <button onclick="changeColor('pink')" id="palette-pink" class="w-7 h-7 rounded-full bg-[#cdb4db] border-2 border-transparent shadow-sm transition-transform"></button>
+            <button onclick="changeColor('orange')" id="palette-orange" class="w-7 h-7 rounded-full bg-[#ddb892] border-2 border-transparent shadow-sm transition-transform"></button>
+        </div>
+    </div>
+
+    <!-- 互動核心 JS -->
     <script>
         // --- 核心幾何整數狀態 ---
         let currentShape = 'parallelogram';
@@ -114,7 +133,7 @@
         let slant = 2;
         let showLowerTriangle = false;
         
-        // --- 莫蘭迪繽紛色調設定 ---
+        // --- 莫蘭迪色調設定 ---
         let activeColorKey = 'blue';
         const colorPalette = {
             blue: { mainFill: 'rgba(142, 154, 175, 0.25)', mainStroke: '#8e9aaf', subFill: 'rgba(224, 159, 141, 0.35)', subStroke: '#e09f8d', hex: '#8e9aaf' },
@@ -123,12 +142,12 @@
             orange: { mainFill: 'rgba(221, 184, 146, 0.25)', mainStroke: '#ddb892', subFill: 'rgba(156, 175, 136, 0.35)', subStroke: '#9caf88', hex: '#ddb892' }
         };
 
-        // --- 完美的虛擬網格錨點（在 600x400 的固定坐標系中） ---
-        const GRID_SCALE = 35; 
-        const ORIGIN_X = 70;   
+        // --- 穩定的虛擬網格錨點（600x400 固定 viewBox 比例） ---
+        const GRID_SCALE = 32; 
+        const ORIGIN_X = 55;   
         const ORIGIN_Y = 320;  
 
-        // --- 拖拉手勢與狀態 ---
+        // --- 拖拉狀態 ---
         let activeHandle = null; 
         let startMouseX = 0;
         let startMouseY = 0;
@@ -145,7 +164,7 @@
             renderGeometry();
         });
 
-        // 鋪滿穩定的格子紙 (限定寬度 12 格，高度 8 格)
+        // 鋪滿 12x8 的格子紙，留白給右側面板
         function generateDynamicGrid() {
             const gridLinesContainer = document.getElementById('grid-lines');
             let gridHTML = '';
@@ -153,34 +172,34 @@
             const paperWidth = 12 * GRID_SCALE;
             const paperHeight = 8 * GRID_SCALE;
 
-            // 1. 幾何格子紙卡片背景
+            // 1. 幾何格子紙卡片背景 (圓角卡片)
             gridHTML += `<rect x="${ORIGIN_X}" y="${ORIGIN_Y - paperHeight}" width="${paperWidth}" height="${paperHeight}" fill="#faf9f6" stroke="#ebdcd0" stroke-width="2.5" rx="8" />`;
 
             // 2. 內部的直向與橫向格線
             for (let i = 0; i <= 12; i++) {
                 const x = ORIGIN_X + i * GRID_SCALE;
-                gridHTML += `<line x1="${x}" y1="${ORIGIN_Y - paperHeight}" x2="${x}" y2="${ORIGIN_Y}" stroke="#ebdcd0" stroke-width="1" />`;
+                gridHTML += `<line x1="${x}" y1="${ORIGIN_Y - paperHeight}" x2="${x}" y2="${ORIGIN_Y}" stroke="#ebdcd0" stroke-width="1.2" />`;
             }
             for (let j = 0; j <= 8; j++) {
                 const y = ORIGIN_Y - j * GRID_SCALE;
-                gridHTML += `<line x1="${ORIGIN_X}" y1="${y}" x2="${ORIGIN_X + paperWidth}" y2="${y}" stroke="#ebdcd0" stroke-width="1" />`;
+                gridHTML += `<line x1="${ORIGIN_X}" y1="${y}" x2="${ORIGIN_X + paperWidth}" y2="${y}" stroke="#ebdcd0" stroke-width="1.2" />`;
             }
 
-            // 3. 下方的刻度標籤
+            // 3. X 軸刻度 (放大並加粗)
             for (let i = 0; i <= 12; i += 2) {
                 const x = ORIGIN_X + i * GRID_SCALE;
-                gridHTML += `<text x="${x}" y="${ORIGIN_Y + 16}" fill="#a59e92" font-size="10" font-weight="700" text-anchor="middle">${i}</text>`;
+                gridHTML += `<text x="${x}" y="${ORIGIN_Y + 18}" fill="#7a7265" font-size="12" font-weight="bold" text-anchor="middle">${i}</text>`;
             }
-            // 4. 左側的高度刻度標籤
+            // 4. Y 軸刻度 (放大並加粗)
             for (let j = 0; j <= 8; j += 2) {
                 const y = ORIGIN_Y - j * GRID_SCALE;
-                gridHTML += `<text x="${ORIGIN_X - 10}" y="${y + 3}" fill="#a59e92" font-size="10" font-weight="700" text-anchor="end">${j}</text>`;
+                gridHTML += `<text x="${ORIGIN_X - 12}" y="${y + 4}" fill="#7a7265" font-size="12" font-weight="bold" text-anchor="end">${j}</text>`;
             }
 
             gridLinesContainer.innerHTML = gridHTML;
         }
 
-        // --- 轉換螢幕座標為 SVG 內部精準虛擬座標（解決手勢偏離） ---
+        // --- 轉換螢幕座標為 SVG 內部虛擬座標（徹底解決手勢偏離漂移問題） ---
         function getSVGPoint(e, svgElement) {
             const point = svgElement.createSVGPoint();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -216,28 +235,44 @@
             currentShape = shapeType;
             const btnP = document.getElementById('btn-parallelogram');
             const btnT = document.getElementById('btn-triangle');
-            const wrapper = document.getElementById('option-triangle-wrapper');
+            const wrapper = document.getElementById('btn-toggle-triangle');
 
             if (shapeType === 'parallelogram') {
-                btnP.className = "flex-1 py-1 rounded-md text-[10px] font-bold transition-all bg-[#8e9aaf] text-white shadow-sm";
-                btnT.className = "flex-1 py-1 rounded-md text-[10px] font-bold transition-all text-[#7f8c8d]";
+                btnP.className = "w-full py-2.5 rounded-lg text-[11px] font-bold transition-all bg-[#8e9aaf] text-white shadow-sm flex items-center justify-center space-x-1";
+                btnT.className = "w-full py-2.5 rounded-lg text-[11px] font-bold transition-all text-[#7f8c8d] border border-[#d4cbba] bg-[#faf9f6] flex items-center justify-center space-x-1";
                 wrapper.style.opacity = "1";
                 wrapper.style.pointerEvents = "auto";
             } else {
-                btnT.className = "flex-1 py-1 rounded-md text-[10px] font-bold transition-all bg-[#8e9aaf] text-white shadow-sm";
-                btnP.className = "flex-1 py-1 rounded-md text-[10px] font-bold transition-all text-[#7f8c8d]";
-                document.getElementById('input-show-triangle').checked = false;
+                btnT.className = "w-full py-2.5 rounded-lg text-[11px] font-bold transition-all bg-[#8e9aaf] text-white shadow-sm flex items-center justify-center space-x-1";
+                btnP.className = "w-full py-2.5 rounded-lg text-[11px] font-bold transition-all text-[#7f8c8d] border border-[#d4cbba] bg-[#faf9f6] flex items-center justify-center space-x-1";
                 showLowerTriangle = false;
                 wrapper.style.opacity = "0.4";
                 wrapper.style.pointerEvents = "none";
                 document.getElementById('small-triangle-report').style.display = 'none';
             }
+            updateControlsState();
             renderGeometry();
         }
 
         function toggleTriangleOption() {
-            showLowerTriangle = document.getElementById('input-show-triangle').checked;
+            if (currentShape !== 'parallelogram') return;
+            showLowerTriangle = !showLowerTriangle;
+            updateControlsState();
             renderGeometry();
+        }
+
+        // 更新右側「下三角自訂按鈕」的亮起狀態
+        function updateControlsState() {
+            const btn = document.getElementById('btn-toggle-triangle');
+            const icon = document.getElementById('triangle-btn-icon');
+            
+            if (showLowerTriangle) {
+                btn.className = "w-full py-2 px-1 rounded-lg border-2 border-[#e09f8d] bg-[#fdf2f0] text-[10px] font-black text-[#b86b57] flex flex-col items-center justify-center space-y-1 transition-all shrink-0";
+                icon.className = "fa-solid fa-eye text-[#e09f8d] text-xs";
+            } else {
+                btn.className = "w-full py-2 px-1 rounded-lg border-2 border-[#e5dfd3] bg-[#faf9f6] text-[10px] font-bold text-slate-700 flex flex-col items-center justify-center space-y-1 transition-all shrink-0";
+                icon.className = "fa-solid fa-eye-slash text-slate-400 text-xs";
+            }
         }
 
         // --- 核心拖拉點擊事件 ---
@@ -326,6 +361,9 @@
             lowerTriangleEl.setAttribute('fill', theme.subFill);
             lowerTriangleEl.setAttribute('stroke', theme.subStroke);
 
+            // 取得右側圖形類型標題
+            const labelShapeTypeEl = document.getElementById('label-shape-type');
+
             if (currentShape === 'parallelogram') {
                 cx = ORIGIN_X + (base + slant) * GRID_SCALE;
                 cy = ORIGIN_Y - height * GRID_SCALE;
@@ -337,7 +375,7 @@
                 if (showLowerTriangle) {
                     lowerTriangleEl.setAttribute('points', `${ax},${ay} ${bx},${by} ${dx},${dy}`);
                     lowerTriangleEl.style.display = 'block';
-                    document.getElementById('small-triangle-report').style.display = 'block';
+                    document.getElementById('small-triangle-report').style.display = 'flex';
                 } else {
                     lowerTriangleEl.style.display = 'none';
                     document.getElementById('small-triangle-report').style.display = 'none';
@@ -345,10 +383,21 @@
 
                 const labelShapeText = (slant === 0) ? "長方形 🟩" : "平行四邊形 ▱";
                 document.getElementById('label-shape-name').innerText = labelShapeText;
-                const area = base * height;
-                document.getElementById('label-total-area').innerText = area;
-                document.getElementById('label-triangle-area').innerText = (base * height) / 2;
+                
+                if (labelShapeTypeEl) {
+                    labelShapeTypeEl.innerText = (slant === 0) ? "長方形" : "四邊形";
+                }
 
+                const area = base * height;
+                document.getElementById('metric-total-area').innerHTML = `${area} <span class="text-[10px] font-bold text-[#c2c9c6]">格</span>`;
+                
+                const triangleArea = (base * height) / 2;
+                const metricTriangleAreaEl = document.getElementById('metric-triangle-area');
+                if (metricTriangleAreaEl) {
+                    metricTriangleAreaEl.innerHTML = `${triangleArea} <span class="text-[9px] font-bold text-[#b86b57]">格</span>`;
+                }
+
+                // 🟢 操控球定位在右上頂點
                 handleTopRight.setAttribute('cx', cx);
                 handleTopRight.setAttribute('cy', cy);
             } else {
@@ -361,29 +410,37 @@
 
                 const labelShapeText = (slant === 0) ? "直角三角形 📐" : "三角形 🔺";
                 document.getElementById('label-shape-name').innerText = labelShapeText;
-                const area = (base * height) / 2;
-                document.getElementById('label-total-area').innerText = area;
+                
+                if (labelShapeTypeEl) {
+                    labelShapeTypeEl.innerText = (slant === 0) ? "直角三角形" : "三角形";
+                }
 
+                const area = (base * height) / 2;
+                document.getElementById('metric-total-area').innerHTML = `${area} <span class="text-[10px] font-bold text-[#c2c9c6]">格</span>`;
+
+                // 🟢 操控球定位在頂部頂點
                 handleTopRight.setAttribute('cx', cx);
                 handleTopRight.setAttribute('cy', cy);
             }
 
+            // 🔵 操控球完美鎖定在底右頂點
             handleBottomRight.setAttribute('cx', bx);
-            handleBottomRight.setAttribute('by', by);
+            handleBottomRight.setAttribute('cy', by);
 
-            // 調整高度參考線與高文字，偏移 28 防止壓到
+            // 調整高度參考線
             heightLineEl.setAttribute('x1', ORIGIN_X);
             heightLineEl.setAttribute('y1', ORIGIN_Y - height * GRID_SCALE);
             heightLineEl.setAttribute('x2', ORIGIN_X);
             heightLineEl.setAttribute('y2', ORIGIN_Y);
 
-            heightTextEl.setAttribute('x', ORIGIN_X - 28);
+            // 高度文字偏移 34 像素，完全避開座標數字
+            heightTextEl.setAttribute('x', ORIGIN_X - 34);
             heightTextEl.setAttribute('y', ORIGIN_Y - (height * GRID_SCALE) / 2);
             heightTextEl.textContent = `高度 = ${height}`;
 
-            // 調整底邊文字，偏移 34 防止壓到
+            // 底邊文字向下偏移 38 像素，完全避開下方座標數字
             baseTextEl.setAttribute('x', ORIGIN_X + (base * GRID_SCALE) / 2);
-            baseTextEl.setAttribute('y', ORIGIN_Y + 34);
+            baseTextEl.setAttribute('y', ORIGIN_Y + 38);
             baseTextEl.textContent = `底邊 = ${base}`;
 
             const hBox = 10;
