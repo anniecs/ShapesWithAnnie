@@ -2,11 +2,9 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>快和Annie一起玩格子畫布</title>
-    <!-- Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>和Annie一起變變變面積</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700&display=swap');
@@ -14,12 +12,12 @@
             font-family: 'Noto Sans TC', sans-serif;
             background-color: #f2efe9; 
             color: #4a4e4d;
-            overflow: hidden; /* 防止手機瀏覽器亂滾動 */
+            overflow: hidden; /* 徹底鎖定螢幕，不允許任何多餘滾動 */
             position: fixed;
             width: 100%;
             height: 100%;
         }
-        /* 讓操作控制點有放大呼吸效果，方便小朋友手指抓取 */
+        /* 加大操控點碰觸範圍，更適合 7 歲小朋友 */
         .magic-handle {
             transition: transform 0.15s ease, fill 0.15s ease;
             cursor: grab;
@@ -33,145 +31,81 @@
         }
     </style>
 </head>
-<body class="flex flex-col h-screen justify-between p-3 safe-top safe-bottom">
+<body class="flex flex-col h-screen h-[100dvh] justify-between p-2.5 select-none">
 
-    <!-- 頂部溫柔導覽列 -->
-    <header class="w-full flex items-center justify-between bg-[#e5dfd3] bg-opacity-70 backdrop-blur-sm p-3 rounded-2xl shadow-sm z-10 mb-2">
-        <div class="flex items-center space-x-3">
-            <div class="bg-[#a3b18a] text-white p-2 rounded-xl shadow-sm">
-                <i class="fa-solid fa-shapes text-lg"></i>
-            </div>
-            <div>
-                <h1 class="text-base font-bold text-[#4a4e4d] tracking-wide">快和Annie一起玩格子畫布 ✨</h1>
-                <p class="text-[10px] text-[#7f8c8d] hidden sm:block">用小手拉拉看，一起發現形狀和面積的秘密！</p>
-            </div>
+    <header class="w-full flex items-center justify-between bg-[#e5dfd3] bg-opacity-70 backdrop-blur-sm py-2 px-3 rounded-xl shadow-sm z-10 shrink-0">
+        <h1 class="text-sm font-bold text-[#4a4e4d] tracking-wide">和Annie一起變變變面積 ✨</h1>
+        
+        <div class="bg-[#4a5356] text-white px-2.5 py-1 rounded-lg shadow-sm flex items-center space-x-1 shrink-0">
+            <span class="text-[9px] text-[#c2c9c6]">目標面積:</span>
+            <span id="label-total-area" class="text-sm font-black tracking-tight text-amber-300">24</span>
+            <span class="text-[9px] text-[#c2c9c6]">格</span>
         </div>
-        <span class="text-[10px] bg-[#b5c2b7] text-[#4a584d] px-3 py-1 rounded-full font-medium shadow-sm">
-            Annie 的幾何樂園 🎨
-        </span>
     </header>
 
-    <!-- 主要內容區：左圖右選 -->
-    <main class="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch overflow-hidden mb-2">
+    <div class="flex-grow my-1.5 relative bg-[#faf9f6] border-2 border-[#e5dfd3] rounded-xl overflow-hidden shadow-inner flex items-center justify-center min-h-0 h-0">
         
-        <!-- 左側：全螢幕觸控幾何畫布 -->
-        <div class="lg:col-span-7 relative bg-[#faf9f6] border-2 border-[#e5dfd3] rounded-2xl overflow-hidden shadow-inner flex items-center justify-center min-h-[280px]">
+        <svg id="geo-canvas" class="w-full h-full select-none" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" style="touch-action: none;">
+            <g id="grid-lines"></g>
+
+            <polygon id="svg-lower-triangle" fill="rgba(224, 159, 141, 0.35)" stroke="#e09f8d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 5" style="display: none;"></polygon>
             
-            <svg id="geo-canvas" class="w-full h-full select-none" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" style="touch-action: none;">
-                <!-- 背景網格線與格子紙容器 -->
-                <g id="grid-lines"></g>
+            <polygon id="svg-main-shape" fill="rgba(142, 154, 175, 0.25)" stroke="#8e9aaf" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"></polygon>
+            
+            <line id="svg-height-line" stroke="#87986a" stroke-width="2.5" stroke-dasharray="4 4" stroke-linecap="round"></line>
+            <path id="svg-right-angle" fill="none" stroke="#87986a" stroke-width="1.5"></path>
+            
+            <text id="svg-height-text" fill="#6b7a52" font-weight="700" font-size="13" text-anchor="end" alignment-baseline="middle">高度 = 4</text>
+            <text id="svg-base-text" fill="#5c677d" font-weight="700" font-size="13" text-anchor="middle">底邊 = 6</text>
 
-                <!-- 下底同高三角形（呈現下三角時高亮） -->
-                <polygon id="svg-lower-triangle" fill="rgba(224, 159, 141, 0.35)" stroke="#e09f8d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 5" style="display: none;"></polygon>
-                
-                <!-- 主核心目標圖形 -->
-                <polygon id="svg-main-shape" fill="rgba(142, 154, 175, 0.25)" stroke="#8e9aaf" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"></polygon>
-                
-                <!-- 身高指示線與直角記號 -->
-                <line id="svg-height-line" stroke="#87986a" stroke-width="2.5" stroke-dasharray="4 4" stroke-linecap="round"></line>
-                <path id="svg-right-angle" fill="none" stroke="#87986a" stroke-width="1.5"></path>
-                
-                <!-- 外側數字標籤（避開格線座標） -->
-                <text id="svg-height-text" fill="#6b7a52" font-weight="700" font-size="13" text-anchor="end" alignment-baseline="middle">高度 = 4</text>
-                <text id="svg-base-text" fill="#5c677d" font-weight="700" font-size="13" text-anchor="middle">底邊 = 6</text>
+            <circle id="handle-top-right" class="magic-handle" r="13" fill="#87986a" stroke="#ffffff" stroke-width="3" shadow-md></circle>
+            
+            <circle id="handle-bottom-right" class="magic-handle" r="13" fill="#6d7993" stroke="#ffffff" stroke-width="3" shadow-md></circle>
+        </svg>
 
-                <!-- 魔法觸控操控球：右上角 (控制高、斜度) - 🟢 -->
-                <circle id="handle-top-right" class="magic-handle" r="13" fill="#87986a" stroke="#ffffff" stroke-width="3" shadow-md></circle>
-                
-                <!-- 魔法觸控操控球：右下角 (控制底邊長度) - 🔵 -->
-                <circle id="handle-bottom-right" class="magic-handle" r="13" fill="#6d7993" stroke="#ffffff" stroke-width="3" shadow-md></circle>
-            </svg>
+        <div class="absolute bottom-2 left-2 bg-[#e5dfd3] bg-opacity-80 px-2 py-0.5 rounded-md text-[9px] font-bold text-[#5a6467] pointer-events-none">
+            目前形狀：<span id="label-shape-name">平行四邊形 ▱</span>
+        </div>
+    </div>
 
-            <!-- 形狀名稱浮動提示 -->
-            <div class="absolute bottom-2 left-2 bg-[#e5dfd3] bg-opacity-80 px-2 py-0.5 rounded-md text-[10px] font-bold text-[#5a6467]">
-                目前形狀：<span id="label-shape-name">平行四邊形 ▱</span>
+    <div class="w-full bg-white rounded-xl border border-[#d8d3c9] p-2 flex flex-col space-y-2 shrink-0">
+        
+        <div class="grid grid-cols-12 gap-2 items-center">
+            <div class="col-span-5 flex bg-[#f2efe9] p-0.5 rounded-lg border border-[#d4cbba] shrink-0">
+                <button id="btn-parallelogram" onclick="setShape('parallelogram')" class="flex-1 py-1 rounded-md text-[10px] font-bold transition-all bg-[#8e9aaf] text-white shadow-sm">
+                    ▱ 四邊形
+                </button>
+                <button id="btn-triangle" onclick="setShape('triangle')" class="flex-1 py-1 rounded-md text-[10px] font-bold transition-all text-[#7f8c8d]">
+                    🔺 三角形
+                </button>
+            </div>
+            
+            <div class="col-span-7 flex items-center justify-around bg-[#faf9f6] py-1 rounded-lg border border-[#e5dfd3] shrink-0">
+                <button onclick="changeColor('blue')" id="palette-blue" class="w-6 h-6 rounded-full bg-[#8e9aaf] border-2 border-white shadow-md transform scale-110 transition-transform"></button>
+                <button onclick="changeColor('green')" id="palette-green" class="w-6 h-6 rounded-full bg-[#a3b18a] border-2 border-transparent shadow-sm transition-transform"></button>
+                <button onclick="changeColor('pink')" id="palette-pink" class="w-6 h-6 rounded-full bg-[#cdb4db] border-2 border-transparent shadow-sm transition-transform"></button>
+                <button onclick="changeColor('orange')" id="palette-orange" class="w-6 h-6 rounded-full bg-[#ddb892] border-2 border-transparent shadow-sm transition-transform"></button>
             </div>
         </div>
 
-        <!-- 右側：控制面板與數據 -->
-        <div class="lg:col-span-5 flex flex-col justify-between bg-white rounded-2xl border border-[#d8d3c9] p-4 space-y-3 overflow-y-auto">
-            
-            <!-- 1. 形狀與顏色選擇 -->
-            <div class="space-y-2">
-                <div class="flex items-center space-x-2 text-xs font-bold text-[#7f8c8d]">
-                    <i class="fa-solid fa-gamepad text-[#8e9aaf]"></i>
-                    <span>1. 選擇圖形與顏色</span>
-                </div>
-                <!-- 形狀切換按鈕 -->
-                <div class="grid grid-cols-2 gap-2 bg-[#f2efe9] p-1 rounded-xl">
-                    <button id="btn-parallelogram" onclick="setShape('parallelogram')" class="py-2 rounded-lg text-xs font-bold transition-all bg-[#8e9aaf] text-white shadow-sm">
-                        ▱ 四邊形
-                    </button>
-                    <button id="btn-triangle" onclick="setShape('triangle')" class="py-2 rounded-lg text-xs font-bold transition-all text-[#7f8c8d]">
-                        🔺 三角形
-                    </button>
-                </div>
-                <!-- 莫蘭迪畫筆顏色 -->
-                <div class="flex items-center justify-around bg-[#faf9f6] py-2 rounded-xl border border-[#e5dfd3]">
-                    <button onclick="changeColor('blue')" id="palette-blue" class="w-8 h-8 rounded-full bg-[#8e9aaf] border-2 border-white shadow-md transform scale-110 transition-transform"></button>
-                    <button onclick="changeColor('green')" id="palette-green" class="w-8 h-8 rounded-full bg-[#a3b18a] border-2 border-transparent shadow-sm transition-transform"></button>
-                    <button onclick="changeColor('pink')" id="palette-pink" class="w-8 h-8 rounded-full bg-[#cdb4db] border-2 border-transparent shadow-sm transition-transform"></button>
-                    <button onclick="changeColor('orange')" id="palette-orange" class="w-8 h-8 rounded-full bg-[#ddb892] border-2 border-transparent shadow-sm transition-transform"></button>
-                </div>
+        <div class="grid grid-cols-12 gap-2 items-center">
+            <div id="option-triangle-wrapper" class="col-span-7 bg-[#faf9f6] px-2 py-1 rounded-lg border border-[#e5dfd3] transition-opacity shrink-0">
+                <label class="flex items-center space-x-2 cursor-pointer select-none">
+                    <input type="checkbox" id="input-show-triangle" onchange="toggleTriangleOption()" class="w-4 h-4 rounded border-[#d8d3c9] text-[#e09f8d] focus:ring-0 bg-white">
+                    <span class="text-[10px] font-bold text-[#4a4e4d]">
+                        👀 呈現下三角
+                    </span>
+                </label>
             </div>
 
-            <!-- 2. 即時圖形面積數據 -->
-            <div class="bg-[#4a5356] text-white p-3 rounded-xl relative overflow-hidden space-y-2">
-                <div class="flex justify-between items-center border-b border-[#5a6467] pb-1.5">
-                    <span class="text-[11px] text-[#c2c9c6]"><i class="fa-solid fa-crown text-amber-400 mr-1"></i>目標圖形面積</span>
-                    <span id="label-shape-type" class="text-[10px] bg-[#5a6467] px-2 py-0.5 rounded text-[#cad2c5]">平行四邊形</span>
-                </div>
-                <div class="flex justify-between items-baseline">
-                    <span class="text-xs text-[#c2c9c6]">總共佔了：</span>
-                    <div class="text-right">
-                        <span id="label-total-area" class="text-2xl font-extrabold tracking-tight">24</span>
-                        <span class="text-xs text-[#c2c9c6]"> 個格子</span>
-                    </div>
-                </div>
+            <div id="small-triangle-report" class="col-span-5 bg-[#e09f8d] bg-opacity-10 border border-[#e09f8d] border-opacity-30 py-1 px-1.5 rounded-lg text-center transition-all shrink-0" style="display: none;">
+                <span class="text-[10px] font-bold text-[#b86b57]">
+                    下三角: <span id="label-triangle-area" class="text-xs font-black">12</span> 格
+                </span>
             </div>
-
-            <!-- 3. 右側：秀出下三角選項與即時三角形面積 -->
-            <div class="border-t border-[#ebdcd0] pt-3 space-y-2.5">
-                <div class="flex items-center space-x-2 text-xs font-bold text-[#7f8c8d]">
-                    <i class="fa-solid fa-eye text-[#e09f8d]"></i>
-                    <span>2. 輔助圖形觀察</span>
-                </div>
-                
-                <!-- 秀出下三角勾選按鈕 (僅在四邊形時可用) -->
-                <div id="option-triangle-wrapper" class="bg-[#faf9f6] p-3 rounded-xl border border-[#e5dfd3] transition-opacity">
-                    <label class="flex items-center space-x-3 cursor-pointer select-none">
-                        <input type="checkbox" id="input-show-triangle" onchange="toggleTriangleOption()" class="w-6 h-6 rounded-lg border-[#d8d3c9] text-[#e09f8d] focus:ring-0 bg-white">
-                        <span class="text-xs font-bold text-[#4a4e4d]">
-                            👀 呈現下三角 (底高組成的三角形)
-                        </span>
-                    </label>
-                </div>
-
-                <!-- 呈現下三角形面積的專屬卡片 (勾選後在下方即時呈現) -->
-                <div id="small-triangle-report" class="bg-[#e09f8d] bg-opacity-10 border-2 border-[#e09f8d] border-opacity-30 p-3 rounded-xl transition-all" style="display: none;">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs font-bold text-[#b86b57]">
-                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> 下三角形面積：
-                        </span>
-                        <span class="text-base font-extrabold text-[#b86b57]">
-                            <span id="label-triangle-area">12</span> <span class="text-xs font-bold">個格子</span>
-                        </span>
-                    </div>
-                    <p class="text-[9px] text-[#7f8c8d] mt-1 text-center">
-                        💡 剛好是上方平行四邊形面積的一半唷！
-                    </p>
-                </div>
-            </div>
-
         </div>
-    </main>
+    </div>
 
-    <!-- 頁尾 -->
-    <footer class="bg-[#e5dfd3] border-t border-[#d4cbba] py-2.5 text-center text-[10px] text-[#7f8c8d] w-full">
-        🌈 專為 Annie 設計的無坐標軸純淨網格對齊幾何板
-    </footer>
-
-    <!-- 互動核心 JS -->
     <script>
         // --- 核心幾何整數狀態 ---
         let currentShape = 'parallelogram';
@@ -219,10 +153,10 @@
             const paperWidth = 12 * GRID_SCALE;
             const paperHeight = 8 * GRID_SCALE;
 
-            // 1. 繪製精美的格子紙卡片背景 (Morandi 風格柔和邊框與底色)
+            // 1. 幾何格子紙卡片背景
             gridHTML += `<rect x="${ORIGIN_X}" y="${ORIGIN_Y - paperHeight}" width="${paperWidth}" height="${paperHeight}" fill="#faf9f6" stroke="#ebdcd0" stroke-width="2.5" rx="8" />`;
 
-            // 2. 繪製內部的直向與橫向格線
+            // 2. 內部的直向與橫向格線
             for (let i = 0; i <= 12; i++) {
                 const x = ORIGIN_X + i * GRID_SCALE;
                 gridHTML += `<line x1="${x}" y1="${ORIGIN_Y - paperHeight}" x2="${x}" y2="${ORIGIN_Y}" stroke="#ebdcd0" stroke-width="1" />`;
@@ -232,12 +166,12 @@
                 gridHTML += `<line x1="${ORIGIN_X}" y1="${y}" x2="${ORIGIN_X + paperWidth}" y2="${y}" stroke="#ebdcd0" stroke-width="1" />`;
             }
 
-            // 3. 繪製下方的刻度標籤 (每隔兩格標示一次，乾淨清爽)
+            // 3. 下方的刻度標籤
             for (let i = 0; i <= 12; i += 2) {
                 const x = ORIGIN_X + i * GRID_SCALE;
                 gridHTML += `<text x="${x}" y="${ORIGIN_Y + 16}" fill="#a59e92" font-size="10" font-weight="700" text-anchor="middle">${i}</text>`;
             }
-            // 4. 繪製左側的高度刻度標籤
+            // 4. 左側的高度刻度標籤
             for (let j = 0; j <= 8; j += 2) {
                 const y = ORIGIN_Y - j * GRID_SCALE;
                 gridHTML += `<text x="${ORIGIN_X - 10}" y="${y + 3}" fill="#a59e92" font-size="10" font-weight="700" text-anchor="end">${j}</text>`;
@@ -246,7 +180,7 @@
             gridLinesContainer.innerHTML = gridHTML;
         }
 
-        // --- 轉換螢幕座標為 SVG 內部精準虛擬座標（100% 解決手勢偏離問題） ---
+        // --- 轉換螢幕座標為 SVG 內部精準虛擬座標（解決手勢偏離） ---
         function getSVGPoint(e, svgElement) {
             const point = svgElement.createSVGPoint();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -285,13 +219,13 @@
             const wrapper = document.getElementById('option-triangle-wrapper');
 
             if (shapeType === 'parallelogram') {
-                btnP.className = "py-2 rounded-lg text-xs font-bold transition-all bg-[#8e9aaf] text-white shadow-sm";
-                btnT.className = "py-2 rounded-lg text-xs font-bold transition-all text-[#7f8c8d]";
+                btnP.className = "flex-1 py-1 rounded-md text-[10px] font-bold transition-all bg-[#8e9aaf] text-white shadow-sm";
+                btnT.className = "flex-1 py-1 rounded-md text-[10px] font-bold transition-all text-[#7f8c8d]";
                 wrapper.style.opacity = "1";
                 wrapper.style.pointerEvents = "auto";
             } else {
-                btnT.className = "py-2 rounded-lg text-xs font-bold transition-all bg-[#8e9aaf] text-white shadow-sm";
-                btnP.className = "py-2 rounded-lg text-xs font-bold transition-all text-[#7f8c8d]";
+                btnT.className = "flex-1 py-1 rounded-md text-[10px] font-bold transition-all bg-[#8e9aaf] text-white shadow-sm";
+                btnP.className = "flex-1 py-1 rounded-md text-[10px] font-bold transition-all text-[#7f8c8d]";
                 document.getElementById('input-show-triangle').checked = false;
                 showLowerTriangle = false;
                 wrapper.style.opacity = "0.4";
@@ -342,18 +276,14 @@
 
                 if (activeHandle === 'bottom-right') {
                     let newBase = Math.round(startBase + deltaX);
-                    // 鎖定底邊最大不可超過：12 - 目前斜度，確保完全在 12 格之內
                     base = Math.max(1, Math.min(12 - slant, newBase));
                 } else if (activeHandle === 'top-right') {
                     let newHeight = Math.round(startHeight - deltaY);
                     let newSlant = Math.round(startSlant + deltaX);
                     
-                    // 高度最大為格子紙的 8 格
                     height = Math.max(1, Math.min(8, newHeight));
-                    // 限制最大斜度為 4 格
                     slant = Math.max(0, Math.min(4, newSlant));
                     
-                    // 確保底邊 + 斜度不會把右上角拉出 12 格邊界
                     if (base + slant > 12) {
                         slant = 12 - base;
                     }
@@ -415,7 +345,6 @@
 
                 const labelShapeText = (slant === 0) ? "長方形 🟩" : "平行四邊形 ▱";
                 document.getElementById('label-shape-name').innerText = labelShapeText;
-                document.getElementById('label-shape-type').innerText = (slant === 0) ? "長方形" : "平行四邊形";
                 const area = base * height;
                 document.getElementById('label-total-area').innerText = area;
                 document.getElementById('label-triangle-area').innerText = (base * height) / 2;
@@ -432,7 +361,6 @@
 
                 const labelShapeText = (slant === 0) ? "直角三角形 📐" : "三角形 🔺";
                 document.getElementById('label-shape-name').innerText = labelShapeText;
-                document.getElementById('label-shape-type').innerText = (slant === 0) ? "直角三角形" : "三角形";
                 const area = (base * height) / 2;
                 document.getElementById('label-total-area').innerText = area;
 
@@ -441,9 +369,9 @@
             }
 
             handleBottomRight.setAttribute('cx', bx);
-            handleBottomRight.setAttribute('cy', by);
+            handleBottomRight.setAttribute('by', by);
 
-            // 調整高參考線與高文字，推到左側座標數字更左邊 (X 偏移 28)，防止壓到
+            // 調整高度參考線與高文字，偏移 28 防止壓到
             heightLineEl.setAttribute('x1', ORIGIN_X);
             heightLineEl.setAttribute('y1', ORIGIN_Y - height * GRID_SCALE);
             heightLineEl.setAttribute('x2', ORIGIN_X);
@@ -453,7 +381,7 @@
             heightTextEl.setAttribute('y', ORIGIN_Y - (height * GRID_SCALE) / 2);
             heightTextEl.textContent = `高度 = ${height}`;
 
-            // 調整底邊文字，推到下方座標數字更下面 (Y 偏移 34)，防止壓到
+            // 調整底邊文字，偏移 34 防止壓到
             baseTextEl.setAttribute('x', ORIGIN_X + (base * GRID_SCALE) / 2);
             baseTextEl.setAttribute('y', ORIGIN_Y + 34);
             baseTextEl.textContent = `底邊 = ${base}`;
